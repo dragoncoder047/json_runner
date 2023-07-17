@@ -299,18 +299,9 @@ class Engine:
         items = itertools.chain.from_iterable(map(self.expr, items))
         return list(items)
 
-    def func_subscr(self, line):
-        container, *keys = self.expr(line)
-        for key in keys:
-            container = container[key]
-        return container
-
     def func_setsub(self, line):
-        container, *keys, val = self.expr(line)
-        lastkey = keys[-1]
-        for key in keys[:-1]:
-            container = container[key]
-        container[lastkey] = val
+        container, key, val = self.expr(line)
+        container[key] = val
         return val
 
     def func_done(self, _): raise Done
@@ -439,6 +430,12 @@ class Engine:
         return self.recursive_interpolate(block['template'])
 
     def op_0_DOLLAR(self, left, right): return [left, self.get(right)]
+
+    def op_1_DOT(self, left, right):
+        return [getattr(left, right)
+                if isinstance(right, str) and hasattr(left, right)
+                else left[right]]
+
     def op_100_not(self, left, right): return [left, not right]
     op_100_BANG = op_100_not
 

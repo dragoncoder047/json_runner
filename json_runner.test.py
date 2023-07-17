@@ -40,7 +40,7 @@ x.eval(yaml.full_load("""
           - insert: set foobarbaz
 - set foo $result
 - say ($foo)
-- set bar [subscr $foo foo bar baz 0 foo bar]
+- set bar $foo.foo.bar.baz.0.foo.bar
 - set baz [eval $bar]
 - say ($baz)
 - function: foo
@@ -82,7 +82,7 @@ x.eval(yaml.full_load("""
       do:
         - set key [quote ($args)]
         - if: $cache has $key
-          then: return [subscr $cache $key]
+          then: return $cache.$key
           else: return [setsub $cache $key [call $func @($args)]]
 - set fib [memoize $fib]
 - say ([fib $times])
