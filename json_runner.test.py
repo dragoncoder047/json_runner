@@ -1,11 +1,11 @@
 import yaml
-import json_runner
+from json_runner import Engine
 import sys
 
 
-sys.setrecursionlimit(2**31 - 1)
+sys.setrecursionlimit(sys.maxsize)
 
-x = json_runner.Engine()
+x = Engine()
 x.eval(yaml.full_load("""
 - set x 1
 - if: $x == 1

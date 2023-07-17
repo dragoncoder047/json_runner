@@ -1,6 +1,8 @@
 import itertools
 import random
 
+__all__ = "Signal Done Next Abort Return Engine".split()
+
 
 def parse(
         string,
