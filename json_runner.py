@@ -300,13 +300,15 @@ class Engine(BareEngine):
 
     def func_set(self, line):
         values = self.expr(line)
+        val = None
         while len(values) >= 2:
             var = values[0]
             val = values[1]
             self.set(var, val)
             values = values[2:]
         if values:
-            return self.get(values[0])
+            val = self.get(values[0])
+        return val
 
     def func_silently(self, line):
         self.silenced = True
