@@ -1,7 +1,7 @@
 import itertools
 import random
 
-__all__ = "Signal Done Next Abort Return Engine".split()
+__all__ = "parse Signal Done Next Abort Return BareEngine Engine".split()
 
 
 def parse(
@@ -118,11 +118,9 @@ class Abort(Signal):
     pass
 
 
-class Engine:
+class BareEngine:
     def __init__(self):
         self.scope_stack = [{}]
-        self.silenced = False
-        self.rng = random.Random()
 
     @property
     def sorted_ops(self):
@@ -261,6 +259,29 @@ class Engine:
                 return
         self.scope_stack[-1][var] = value
 
+    def make_lambda(self, params, body):
+        if None in self.scope_stack:
+            first_none = self.scope_stack.index(None)
+            last_none = (len(self.scope_stack) -
+                         list(reversed(self.scope_stack)).index(None))
+            closed_scopes = (self.scope_stack[:first_none] +
+                             self.scope_stack[last_none+1:])
+        else:
+            closed_scopes = self.scope_stack.copy()
+        lambda_ = {
+            "closure": closed_scopes,
+            "params": params,
+            "body": body
+        }
+        return lambda_
+
+
+class Engine(BareEngine):
+    def __init__(self):
+        super().__init__()
+        self.silenced = False
+        self.rng = random.Random()
+
     def print(self, *a, **k):
         if self.silenced:
             return
@@ -375,22 +396,6 @@ class Engine:
             except Done:
                 break
         return result
-
-    def make_lambda(self, params, body):
-        if None in self.scope_stack:
-            first_none = self.scope_stack.index(None)
-            last_none = (len(self.scope_stack) -
-                         list(reversed(self.scope_stack)).index(None))
-            closed_scopes = (self.scope_stack[:first_none] +
-                             self.scope_stack[last_none+1:])
-        else:
-            closed_scopes = self.scope_stack.copy()
-        lambda_ = {
-            "closure": closed_scopes,
-            "params": params,
-            "body": body
-        }
-        return lambda_
 
     def block_function_params_do(self, block):
         lambda_ = self.make_lambda(block['params'], block['do'])
