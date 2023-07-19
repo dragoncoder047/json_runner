@@ -86,5 +86,14 @@ x.eval(yaml.full_load("""
           else: return [setsub $cache $key [call $func @($args)]]
 - set fib [memoize $fib]
 - say ([fib $times])
-- say ($fib)
+- set globalvar helloiamglobal
+- function: closure-vars-test
+  params: []
+  do:
+    - lambda: []
+      do:
+        - lambda: []
+          do:
+            - say ($globalvar)
+- say ([call [call [closure-vars-test]]])
 """))
