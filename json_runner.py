@@ -9,8 +9,8 @@ def parse(
         delimiters,
         *,
         singletons=[],
-        openers="[{(\"'`",
-        closers="]})\"'`",
+        openers="[{(\"'",
+        closers="]})\"'",
         include_delims=False,
         split_at_parens=True):
     # Adapted from https://stackoverflow.com/a/64211769
@@ -180,8 +180,6 @@ class BareEngine:
                 tokens[i] = self.eval(t[1:-1])
             elif t[0] in "{'\"":
                 tokens[i] = t[1:-1]
-            elif t[0] == "`":
-                tokens[i] = self.interpolate(t[1:-1])
             if isinstance(tokens[i], str):
                 try:
                     tokens[i] = int(tokens[i], base=0)
