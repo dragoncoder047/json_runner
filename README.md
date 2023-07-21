@@ -98,7 +98,7 @@ Conceptually, there are 4 major things in JSON: strings, numbers, objects (Pytho
 : Ask prints the interpolate-string like `puts`, followed by a space, and then returns the next line of user input. Confirm is similar, it also asks the user for input, but it repeatedly re-evaluates the prompt and asks again until the user enters yes or no, and then it returns true or false when they do.
 
 `call <function> <arguments>`
-:   Calls the function with the provided arguments, both are expressions. FUnctionally identical to writing the name of the function followed by the arguments, but 1. the arguments are evaluated regardless of whether the function actually would have if it had been called in the normal fashion, and 2. the function doesn't have to just be a name, it can be an expression that does some work and then *returns* a function value. Useful if you're doing a lot with closures nd don't want to store them in temporary variables in order to be able to refer to them by name.
+:   Calls the function with the provided arguments, both are expressions. Functionally identical to writing the name of the function followed by the arguments, but 1. the arguments are evaluated regardless of whether the function actually would have if it had been called in the normal fashion, and 2. the function doesn't have to just be a name, it can be an expression that does some work and then *returns* a function value. Useful if you're doing a lot with closures and don't want to store them in temporary variables in order to be able to refer to them by name.
 
 ### Blocks
 
