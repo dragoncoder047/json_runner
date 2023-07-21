@@ -171,9 +171,11 @@ class BareEngine:
             filter(bool, parse(
                 string, " ", singletons=text_ops, split_at_parens=True)))
         for i, t in enumerate(tokens):
+            if not isinstance(t, str):
+                continue
             if t[0] == "(":
                 val = self.expr(t[1:-1])
-                tokens[i:i+len(val)] = val
+                tokens[i:i+1] = val
             elif t[0] == "[":
                 tokens[i] = self.eval(t[1:-1])
             elif t[0] in "{'\"":
