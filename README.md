@@ -152,4 +152,18 @@ Conceptually, there are 4 major things in JSON: strings, numbers, objects (Pytho
 
 ## Python implementation
 
-TODO: explain this
+The parsing and evaluation is handled by the low-level `BareEngine` class in json_runner.py. The `eval()` method takes the parsed JSON value, and switches on the type. If it is a list, the items are each passed to `eval()` recursively; if it's a dictionary the keys are used to look up the block handler function; if it's a string, it is split at the first whitespace and the function name is looked up and called; otherwise the value is returned as is.
+
+Block, function, and operator handers are named much like the Python standard `cmd` module does it; functions are named `func_` plus the function name (e.g. `func_say` for the `say` function); blocks are named `block_` plus the keys for that block joined by underscores (e.g. the if-then-else handler function is called `block_if_then_else`); and operators are named `op_` plus the precedence plus the operator text with special characters replaced by capitalized name counterparts (e.g. `op_800_doesnAPOSt_have` for the `doesn't have` operator) -- search for `PYTHONIZE_MAP` in json_runner.py to find the names of the special characters.
+
+The `expr()` function handles the expression functionality and its operation is a little more complex:
+
+1. `expr()` starts by calling the `parse()` helper function, which splits the string into tokens, being careful not to split inside strings or groups of parenthesis.
+2. Each token is then pre-processed: sub-expression tokens enclosed in parenthesis are recursively passed to `expr()` and the result spliced back in, function-call expressions enclosed in square brackets are passed to `eval()`, strings enclosed in curly brackets or quotes are stripped of their quotes, and strings representing numbers are converted to actual numbers.
+3. The token list is padded with `None` on both ends to allow unary operators to be emulated with binary operators that return the unused argument unchanged.
+4. The highest precedence operator is found in the list, and the corresponding function is called to compute it. The function returns a list, and the result is spliced (not inserted) back into the tokens array.
+5. The `None`-padding is removed and checked to make sure it is still `None` (if it isn't, there was a syntax error).
+6. If there are more operators, the loop continues from step 3.
+7. If there are no more operators, the tokens list is returned.
+
+The only difference between `BareEngine` and `Engine` is that `BareEngine` has absolutely no functions, operators, or blocks implemented on it; while `Engine` has all of the above items implemented.
