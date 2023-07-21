@@ -124,7 +124,7 @@ Conceptually, there are 4 major things in JSON: strings, numbers, objects (Pytho
 :   Looks up the variable named by the string using the current scoping rules, and returns it, or throws an error if it was not set.
 
 *container*`.`*key*
-:   Gets the *key* property on the container, or indexes the container using the key. (Equivalent to Python `container.key` or `container[key]`.)
+:   Gets the *key* property on the container, or indexes the container using the key. (Equivalent to Python `getattr(container, key)` or `container[key]`.)
 
 `!`*value*, `not`*value*
 :   Returns the boolean NOT of the value.
@@ -139,7 +139,7 @@ Conceptually, there are 4 major things in JSON: strings, numbers, objects (Pytho
 :   Returns `range(low, high)`.
 
 *a*`^`*b*, *a*`*`*b*, *a*`/`*b*, *a*`%`*b*, *a*`+`*b*, *a*`-`*b*, *a*`==`*b*, *a*`!=`*b*, *a*`<=`*b*, *a*`>=`*b*, *a*`<`*b*, *a*`>`*b*
-:   Standard math and comparison operations: exponet, multiply, divide, modulo, add, subtract, equal, not equal, less than or equal to, greather than or equal to, less than, greather than.
+:   Standard math and comparison operations: exponent, multiply, divide, modulo, add, subtract, equal, not equal, less than or equal to, greather than or equal to, less than, greather than.
 
 *item*`in`*container*, *item*`is in`*container*, *item*`not in`*container*, *item*`is not in`*container*, *container*`contains`*item*, *container*`has`*item*, *container*`doesn't contain`*item*, *container*`does not contain`*item*, *container*`doesn't have`*item*, *container*`does not have`*item*
 :   Tests to see if *container* includes *item* in it. They all reduce to the Python `in` or `not in` tests.
