@@ -200,8 +200,10 @@ class BareEngine:
                 except ValueError:
                     continue
                 finally:
-                    tokens.pop(0)
-                    tokens.pop()
+                    assert tokens.pop(
+                        0) is None, "postfix operator not allowed at beginning"
+                    assert tokens.pop(
+                    ) is None, "prefix operator not allowed at end"
             else:
                 break
         return tokens

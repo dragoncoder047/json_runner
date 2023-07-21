@@ -97,4 +97,5 @@ x.eval(yaml.full_load("""
             - say ($globalvar)
 - say ([call [call [closure-vars-test]]])
 - say ((1 2 3) foo bar)
+- say (#[list 1 2 3])
 """))
