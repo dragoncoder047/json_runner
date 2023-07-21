@@ -454,6 +454,7 @@ class Engine(BareEngine):
         except TypeError:
             return [left, right]
 
+    def op_100_HASH(self, left, right): return [left, len(right)]
     def op_200_DOTDOT(self, left, right): return [range(left, right)]
     op_200_to = op_200_DOTDOT
     def op_300_CARET(self, left, right): return [pow(left, right)]
