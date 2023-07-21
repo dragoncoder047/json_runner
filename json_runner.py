@@ -478,6 +478,7 @@ class Engine(BareEngine):
     def op_800_doesnAPOSt_contain(self, left, right): return [
         right not in left]
     op_800_doesnAPOSt_have = op_800_doesnAPOSt_contain
+    op_800_does_not_have = op_800_does_not_contain = op_800_doesnAPOSt_contain
     def op_900_ANDAND(self, left, right): return [left and right]
     op_900_and = op_900_ANDAND
     def op_900_PIPEPIPE(self, left, right): return [left or right]
