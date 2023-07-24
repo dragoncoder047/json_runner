@@ -167,3 +167,7 @@ The `expr()` function handles the expression functionality and its operation is 
 7. If there are no more operators, the tokens list is returned.
 
 The only difference between `BareEngine` and `Engine` is that `BareEngine` has absolutely no functions, operators, or blocks implemented on it; while `Engine` has all of the above items implemented.
+
+### Performance
+
+Abysmal at best. The implementation is highly recursive: every bracket, every nested data object, every function call, all put at least 2 call frames (and often more) on Python's stack. I advise calling `sys.setrecursionlimit(2**31-1)` (the maximum value) before calling any recursive JSON-code. This implementation was not designed for speed or memory but as just something that works.
