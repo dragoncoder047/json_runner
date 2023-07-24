@@ -209,7 +209,7 @@ class BareEngine:
         return tokens
 
     def call_function(self, code):
-        name, arg = (code + " ").split(" ", 1)
+        name, arg = (code + " ").split(None, 1)
         if hasattr(self, "func_" + name):
             return getattr(self, "func_" + name)(arg.strip())
         args = self.expr(arg)
