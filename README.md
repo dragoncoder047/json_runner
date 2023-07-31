@@ -116,7 +116,22 @@ Conceptually, there are 4 major things in JSON: strings, numbers, objects (Pytho
 :   Creates anonymous and named functions. The list of varnames is the parameters, and additionally the entire arguments list is available as `$args`. The named form is equivalent to setting the value returned by the lambda form (`$result`) to the named variable. The functions are closures, with Python-style local->global->builtin scoping rules.
 
 `{"template": ...}`
-:   TODO: document this one
+:   This one was designed to act a lot like Scheme quasiquotes. In fact, they are basically identical:
+
+```python
+>>> json_runner.Engine().eval([
+...     "set bar 33",
+...     {"template": {"numbers": [1, 2, 1, {"template": [{"insert": "foo"}, {"insert": {"insert": "set bar"}}]}]}}
+... ])
+{'numbers': [1, 2, 1, {'template': [{'insert': 'foo'}, {'insert': 33}]}]}
+```
+```scheme
+(define bar 33)
+(display `(numbers 1 2 1 `(,foo ,,bar)))
+;; prints: (numbers 1 2 1 (quasiquote ((unquote foo) (unquote 33))))
+```
+
+The objects with the sole "template" key act as `quasiquote`, and ones with the sole key of "insert" function as `unquote`.
 
 ### Operators
 
