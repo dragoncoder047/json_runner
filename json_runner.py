@@ -168,7 +168,7 @@ class BareEngine:
         ###############
         tokens = list(
             filter(bool, parse(
-                string, " ", singletons=text_ops, split_at_parens=True)))
+                string, " ", singletons=text_ops)))
         for i, t in enumerate(tokens):
             if not isinstance(t, str):
                 continue
