@@ -31,8 +31,7 @@ def parse(
                     continue
             else:
                 if split_at_parens and not stack and current_string:
-                    if current_string:
-                        yield current_string
+                    yield current_string
                     current_string = ""
                 stack.append(c)
         elif c in closers:
