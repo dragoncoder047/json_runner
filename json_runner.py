@@ -1,5 +1,6 @@
 import itertools
 import random
+from collections import OrderedDict
 
 __all__ = "parse Signal Done Next Abort Return BareEngine Engine".split()
 
@@ -122,12 +123,18 @@ class BareEngine:
         self.scope_stack = [{}]
 
     @property
-    def sorted_ops(self):
+    def ops(self):
         names = [x for x in dir(self) if x.startswith("op_")]
         nPk = [(int((s := n.removeprefix("op_").split("_", 1))[0]), s[1], n)
                for n in names]
         sPk = sorted(nPk, key=lambda x: x[0])
-        return [x[1:] for x in sPk]
+        text_ops = [x[1].replace("_", " ") for x in sPk]
+        for i, o in enumerate(text_ops):
+            for punc, py in PYTHONIZE_MAP.items():
+                o = o.replace(py, punc)
+            text_ops[i] = o
+        py_name_ops = [getattr(self, x[2]) for x in sPk]
+        return OrderedDict(zip(text_ops, py_name_ops))
 
     def eval(self, code):
         match code:
@@ -158,17 +165,9 @@ class BareEngine:
 
     def expr(self, string):
         string = string.strip()
-        ############
-        text_ops = [x[0].replace("_", " ") for x in self.sorted_ops]
-        for i, o in enumerate(text_ops):
-            for punc, py in PYTHONIZE_MAP.items():
-                o = o.replace(py, punc)
-            text_ops[i] = o
-        py_name_ops = [x[1] for x in self.sorted_ops]
-        ###############
         tokens = list(
             filter(bool, parse(
-                string, " ", singletons=text_ops)))
+                string, " ", singletons=self.ops.keys())))
         for i, t in enumerate(tokens):
             if not isinstance(t, str):
                 continue
@@ -188,12 +187,12 @@ class BareEngine:
                     except ValueError:
                         pass
         while True:
-            for text_op, op_func_name in zip(text_ops, py_name_ops):
+            for text_op, op_func in self.ops.items():
                 tokens.insert(0, None)
                 tokens.append(None)
                 try:
                     i = tokens.index(text_op)
-                    val = getattr(self, op_func_name)(tokens[i-1], tokens[i+1])
+                    val = op_func(tokens[i-1], tokens[i+1])
                     tokens[i-1:i+2] = val if isinstance(val, list) else [val]
                     break
                 except ValueError:

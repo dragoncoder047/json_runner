@@ -3,7 +3,16 @@ from json_runner import Engine
 import sys
 
 
-sys.setrecursionlimit(sys.maxsize)
+step = sys.maxsize // 2
+limit = sys.maxsize
+while step > 1:
+    try:
+        sys.setrecursionlimit(limit)
+        limit += step
+    except OverflowError:
+        limit -= step
+    step //= 2
+print("max recursion limit:", hex(limit))
 
 x = Engine()
 x.eval(yaml.full_load("""
@@ -85,7 +94,7 @@ x.eval(yaml.full_load("""
           then: return $cache.$key
           else: return [setsub $cache $key [call $func @($args)]]
 - set fib [memoize $fib]
-# - say ([fib $times])
+- say ([fib $times])
 - set globalvar helloiamglobal
 - function: closure-vars-test
   params: []
