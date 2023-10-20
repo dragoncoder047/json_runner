@@ -2,75 +2,9 @@ import itertools
 import random
 from collections import OrderedDict
 
+from .string_parsing import parse
+
 __all__ = "parse Signal Done Next Abort Return BareEngine Engine".split()
-
-
-def parse(
-        string,
-        delimiters,
-        *,
-        singletons=[],
-        openers="[{(\"'",
-        closers="]})\"'",
-        include_delims=False,
-        split_at_parens=True):
-    # Adapted from https://stackoverflow.com/a/64211769
-    current_string = ''
-    stack = []
-    otc = dict(zip(openers, closers))
-    delimiters = sorted(delimiters, key=len, reverse=True)
-    singletons = sorted(singletons, key=len, reverse=True)
-    while string:
-        c = string[0]
-        if c in openers:
-            if stack and otc[c] == stack[-1] == c:
-                stack.pop()
-                if split_at_parens:
-                    yield current_string + c
-                    current_string = ""
-                    string = string[1:]
-                    continue
-            else:
-                if split_at_parens and not stack and current_string:
-                    yield current_string
-                    current_string = ""
-                stack.append(c)
-        elif c in closers:
-            if not stack:
-                raise SyntaxError("unopened %s" % c)
-            if otc[b := stack.pop()] != c:
-                raise SyntaxError(
-                    f"closing paren '{c}' does not match opening paren '{b}'")
-            if split_at_parens and not stack and current_string:
-                yield current_string + c
-                current_string = c = ""
-        at_split = False
-        if not stack:
-            for d in delimiters:
-                if string.startswith(d):
-                    if current_string:
-                        yield current_string
-                    if include_delims:
-                        yield d
-                    current_string = ""
-                    string = string.removeprefix(d)
-                    at_split = True
-                    break
-        if not at_split:
-            for s in singletons:
-                if stack:
-                    continue
-                if string.startswith(s):
-                    yield from (current_string, s)
-                    current_string = ""
-                    string = string.removeprefix(s)
-                    break
-            else:
-                current_string += c
-                string = string[1:]
-    if stack:
-        raise SyntaxError(f"unmatched '{stack[-1]}'")
-    yield current_string
 
 
 PYTHONIZE_MAP = {
@@ -125,16 +59,16 @@ class BareEngine:
     @property
     def ops(self):
         names = [x for x in dir(self) if x.startswith("op_")]
-        nPk = [(int((s := n.removeprefix("op_").split("_", 1))[0]), s[1], n)
+        precedence_name_method = [(int((s := n.removeprefix("op_").split("_", 1))[0]), s[1], n)
                for n in names]
-        sPk = sorted(nPk, key=lambda x: x[0])
-        text_ops = [x[1].replace("_", " ") for x in sPk]
-        for i, o in enumerate(text_ops):
-            for punc, py in PYTHONIZE_MAP.items():
-                o = o.replace(py, punc)
-            text_ops[i] = o
-        py_name_ops = [getattr(self, x[2]) for x in sPk]
-        return OrderedDict(zip(text_ops, py_name_ops))
+        sorted_pnm = sorted(precedence_name_method, key=lambda x: x[0])
+        op_names = [x[1].replace("_", " ") for x in sorted_pnm]
+        for i, o in enumerate(op_names):
+            for punctuation, python in PYTHONIZE_MAP.items():
+                o = o.replace(python, punctuation)
+            op_names[i] = o
+        callbacks = [getattr(self, x[2]) for x in sorted_pnm]
+        return OrderedDict(zip(op_names, callbacks))
 
     def eval(self, code):
         match code:
@@ -142,9 +76,6 @@ class BareEngine:
                 code = code.strip()
                 if not code:
                     return None
-                if ";" in code:
-                    return self.eval(list(parse(code, [";"],
-                                                split_at_parens=False)))
                 return self.call_function(code)
             case list() | tuple():
                 self.scope_stack[-1]["result"] = None

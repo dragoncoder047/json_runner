@@ -108,3 +108,11 @@ x.eval(yaml.full_load("""
 - say ((1 2 3) foo bar)
 - say (#[list 1 2 3])
 """))
+
+# test bad parsing (issue #1)
+
+x.eval(yaml.full_load("""
+# this errors because of the unclosed quote
+#      v
+- say I'm a tomato!
+"""))
