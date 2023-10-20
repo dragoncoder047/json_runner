@@ -1,7 +1,6 @@
 
 
 from dataclasses import dataclass, field
-from pprint import pprint
 from typing import Any
 import regex
 
@@ -36,74 +35,6 @@ class ParenList(list, Token):
 
     def __repr__(self):
         return f"<{self.__class__.__name__} opener={self.opener!r} {super().__repr__()} closer={self.closer!r}>"
-
-
-def parse(
-        string,
-        delimiters,
-        *,
-        singletons=[],
-        openers="[{(\"'",
-        closers="]})\"'",
-        include_delims=False,
-        split_at_parens=True):
-    # Adapted from https://stackoverflow.com/a/64211769
-    current_string = ''
-    stack = []
-    otc = dict(zip(openers, closers))
-    delimiters = sorted(delimiters, key=len, reverse=True)
-    singletons = sorted(singletons, key=len, reverse=True)
-    while string:
-        c = string[0]
-        if c in openers:
-            if stack and otc[c] == stack[-1] == c:
-                stack.pop()
-                if split_at_parens:
-                    yield current_string + c
-                    current_string = ""
-                    string = string[1:]
-                    continue
-            else:
-                if split_at_parens and not stack and current_string:
-                    yield current_string
-                    current_string = ""
-                stack.append(c)
-        elif c in closers:
-            if not stack:
-                raise SyntaxError("unopened %s" % c)
-            if otc[b := stack.pop()] != c:
-                raise SyntaxError(
-                    f"closing paren '{c}' does not match opening paren '{b}'")
-            if split_at_parens and not stack and current_string:
-                yield current_string + c
-                current_string = c = ""
-        at_split = False
-        if not stack:
-            for d in delimiters:
-                if string.startswith(d):
-                    if current_string:
-                        yield current_string
-                    if include_delims:
-                        yield d
-                    current_string = ""
-                    string = string.removeprefix(d)
-                    at_split = True
-                    break
-        if not at_split:
-            for s in singletons:
-                if stack:
-                    continue
-                if string.startswith(s):
-                    yield from (current_string, s)
-                    current_string = ""
-                    string = string.removeprefix(s)
-                    break
-            else:
-                current_string += c
-                string = string[1:]
-    if stack:
-        raise SyntaxError(f"unmatched '{stack[-1]}'")
-    yield current_string
 
 
 def raise_token_error(tokens, errormsg):
@@ -144,6 +75,7 @@ def _parse_secondpass(tree):
             treeval = Expression(list(map(_parse_secondpass, tree)))
     return treeval
 
+
 def _interpolate_secondpass(top):
     out = []
     prev = top.opener
@@ -158,12 +90,12 @@ def _interpolate_secondpass(top):
     return out
 
 
-def _parse_firstpass(line, atoms, mismatch_pred=lambda _: True, notclosed_pred=lambda _: True):
+def _parse_firstpass(line, atoms, wrapped, mismatch_pred=lambda _: True, notclosed_pred=lambda _: True):
     # first pass: nesting stuff
     stack = []
     current_tokens = ParenList()
     # everything is wrapped in top level function call
-    current_tokens.opener = Token(0, "[", "[", line)
+    current_tokens.opener = Token(0, wrapped[0], wrapped[0], line)
     c2o = dict(zip(")]}", "([{"))
     for token in tokenize(line, atoms):
         if token.value in c2o.values():
@@ -186,17 +118,17 @@ def _parse_firstpass(line, atoms, mismatch_pred=lambda _: True, notclosed_pred=l
                           "these parens were never closed:")
     elif stack:
         current_tokens = stack[0][0]
-    current_tokens.closer = Token(len(line) - 1, "]", "]", line)
+    current_tokens.closer = Token(len(line) - 1, wrapped[1], wrapped[1], line)
     return current_tokens
 
 
-def parse2(line, atoms):
-    return _parse_secondpass(_parse_firstpass(line, atoms))
+def parse2(line, atoms, wrapped):
+    return _parse_secondpass(_parse_firstpass(line, atoms, wrapped))
 
 
 def parse_interpolated(line, atoms):
-    has_open = lambda stack: stack and stack[0][0].opener == "("
-    return _interpolate_secondpass(_parse_firstpass(line, atoms, has_open, has_open))
+    def has_open(stack): return stack and stack[0][0].opener == "("
+    return _interpolate_secondpass(_parse_firstpass(line, atoms, "()", has_open, has_open))
 
 
 def process_escapes(string):
@@ -205,7 +137,7 @@ def process_escapes(string):
 
 
 def process_token(token):
-    if token[0] in "'\'":
+    if token[0] in "'\"":
         return process_escapes(token[1:-1])
     try:
         return int(token, base=0)
@@ -242,7 +174,7 @@ def tokenize(string, atoms):
 
 
 if __name__ == '__main__':
-    line, atoms = "'et a tomato! (Sub-expression) {]{]{] pa(\"'\") spooky! (the orange) And errors: {{{", [
+    line, atoms = "It's a tomato! (Sub-expression) {]{]{] pa(\"'\\n\\n\") spooky! (the orange) And errors: {{{", [
         "$", "or", "and", "is in"]
     for t in tokenize(line, atoms):
         print(t.line)

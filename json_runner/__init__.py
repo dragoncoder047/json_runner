@@ -1,8 +1,9 @@
 import itertools
 import random
 from collections import OrderedDict
+import time
 
-from .string_parsing import parse
+from .string_parsing import Expression, FunctionCall, parse2, parse_interpolated
 
 __all__ = "parse Signal Done Next Abort Return BareEngine Engine".split()
 
@@ -60,7 +61,7 @@ class BareEngine:
     def ops(self):
         names = [x for x in dir(self) if x.startswith("op_")]
         precedence_name_method = [(int((s := n.removeprefix("op_").split("_", 1))[0]), s[1], n)
-               for n in names]
+                                  for n in names]
         sorted_pnm = sorted(precedence_name_method, key=lambda x: x[0])
         op_names = [x[1].replace("_", " ") for x in sorted_pnm]
         for i, o in enumerate(op_names):
@@ -94,29 +95,8 @@ class BareEngine:
             case _:
                 return code
 
-    def expr(self, string):
-        string = string.strip()
-        tokens = list(
-            filter(bool, parse(
-                string, " ", singletons=self.ops.keys())))
-        for i, t in enumerate(tokens):
-            if not isinstance(t, str):
-                continue
-            if t[0] == "(":
-                val = self.expr(t[1:-1])
-                tokens[i:i+1] = val
-            elif t[0] == "[":
-                tokens[i] = self.eval(t[1:-1])
-            elif t[0] in "{'\"":
-                tokens[i] = t[1:-1]
-            if isinstance(tokens[i], str):
-                try:
-                    tokens[i] = int(tokens[i], base=0)
-                except ValueError:
-                    try:
-                        tokens[i] = float(tokens[i])
-                    except ValueError:
-                        pass
+    def _reduce_expression(self, tokens):
+        tokens = list(itertools.chain.from_iterable(map(self._apply_ast_node, tokens)))
         while True:
             for text_op, op_func in self.ops.items():
                 tokens.insert(0, None)
@@ -137,31 +117,45 @@ class BareEngine:
                 break
         return tokens
 
-    def call_function(self, code):
-        try:
-            name, arg = code.split(None, 1)
-        except ValueError:
-            name, arg = code, ""
+    def _apply_ast_node(self, node):
+        match node:
+            case Expression():
+                return self.expr(node)
+            case FunctionCall():
+                return [self.call_function(node.name, node.arg)]
+            case _:
+                return [node]
+
+    def expr(self, tree):
+        if isinstance(tree, str):
+            tree = parse2(tree, self.ops.keys(), "()")
+            assert isinstance(tree, Expression), "bad parse"
+        items = self._reduce_expression(tree.elements)
+        return items
+
+    def call_function(self, name, arg=None):
+        if arg is None:
+            result = parse2(name, [], "[]")
+            name, arg = result.name, result.arg
         if hasattr(self, "func_" + name):
             return getattr(self, "func_" + name)(arg.strip())
-        args = self.expr(arg)
-        return self.call_user_function_or(name, args, code)
+        return self.call_user_function(name, self.expr(arg))
 
     @staticmethod
     def _test_function(func):
         return (isinstance(func, dict)
                 and sorted(func.keys()) == ['body', 'closure', 'params'])
 
-    def call_user_function_or(self, name, args, code):
+    def call_user_function(self, name, args):
         if self._test_function(name):
             func = name
         else:
             try:
                 func = self.get(name)
                 if not self._test_function(func):
-                    return code
-            except UnboundLocalError:
-                return code
+                    raise NameError(name)
+            except UnboundLocalError as e:
+                raise NameError(name) from e
         orig_len = len(self.scope_stack)
         self.scope_stack.append(None)
         self.scope_stack.extend(func['closure'])
@@ -222,8 +216,8 @@ class Engine(BareEngine):
         print(*a, **k)
 
     def interpolate(self, line):
-        it = parse(line, [], split_at_parens=True)
-        it = map(lambda x: self.expr(x[1:-1]) if x and x[0] == "(" else x, it)
+        it = parse_interpolated(line, self.ops.keys())
+        it = (self._apply_ast_node(ex) for ex in it)
         return "".join(map(str, itertools.chain.from_iterable(it)))
 
     def _outputcmd(self, line, **kwargs):
@@ -253,10 +247,7 @@ class Engine(BareEngine):
         return rv
 
     def func_list(self, line):
-        items = filter(bool, map(str.strip, parse(
-            line, [","], split_at_parens=False)))
-        items = itertools.chain.from_iterable(map(self.expr, items))
-        return list(items)
+        return list(self.expr(parse2(line, self.ops.keys(), "()")))
 
     def func_setsub(self, line):
         container, key, val = self.expr(line)
@@ -299,7 +290,7 @@ class Engine(BareEngine):
 
     def func_call(self, line):
         func, *args = self.expr(line)
-        return self.call_user_function_or(func, args, line)
+        return self.call_user_function(func, args)
 
     def block_if_then_else(self, block):
         cond, = self.expr(block['if'])

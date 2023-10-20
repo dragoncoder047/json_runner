@@ -25,7 +25,7 @@ x.eval(yaml.full_load("""
   then: say hello
   else: say goodbye
 - say (not 1)
-- say ([list (not 1) @(1..10), nil])
+- say ([list (not 1) @(1..10) nil])
 - foreach: i
   in: 1 to 10
   do: say hello ($i)
@@ -59,7 +59,7 @@ x.eval(yaml.full_load("""
     - return [list 1 2 3]
 - say ($foo)
 - say ([foo yay nay])
-- function: make-counter
+- function: make_counter
   params: [val]
   do:
     - lambda: [plus]
@@ -67,8 +67,8 @@ x.eval(yaml.full_load("""
         - set val $val + $plus
         - return $val
     - return $result
-- set x [make-counter 5]
-- set y [make-counter 50]
+- set x [make_counter 5]
+- set y [make_counter 50]
 - say ([x 100])
 - say ([x 100])
 - say ([x 100])
@@ -96,7 +96,7 @@ x.eval(yaml.full_load("""
 - set fib [memoize $fib]
 - say ([fib $times])
 - set globalvar helloiamglobal
-- function: closure-vars-test
+- function: closure_vars_test
   params: []
   do:
     - lambda: []
@@ -104,15 +104,8 @@ x.eval(yaml.full_load("""
         - lambda: []
           do:
             - say ($globalvar)
-- say ([call [call [closure-vars-test]]])
+- say ([call [call [closure_vars_test]]])
 - say ((1 2 3) foo bar)
 - say (#[list 1 2 3])
-"""))
-
-# test bad parsing (issue #1)
-
-x.eval(yaml.full_load("""
-# this errors because of the unclosed quote
-#      v
 - say I'm a tomato!
 """))
