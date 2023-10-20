@@ -108,4 +108,5 @@ x.eval(yaml.full_load("""
 - say ((1 2 3) foo bar)
 - say (#[list 1 2 3])
 - say I'm a tomato!
+- say (sandbox world door)
 """))

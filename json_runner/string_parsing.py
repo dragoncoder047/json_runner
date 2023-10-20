@@ -137,6 +137,8 @@ def process_escapes(string):
 
 
 def process_token(token):
+    if not token:
+        return ""
     if token[0] in "'\"":
         return process_escapes(token[1:-1])
     try:
@@ -155,30 +157,45 @@ def escape_atom(a):
 
 
 def tokenize(string, atoms):
-    ATOM_TOKEN = "|".join(map(escape_atom, sorted(atoms, reverse=True)))
-    STRING_TOKEN = r"""(?<=\s|^)(?P<q>['"])(?:\\\S|(?!(?P=q))[\s\S])*?(?P=q)(?=\s|$)"""
-    NUMBER_TOKEN = r"0x\d+|-?\d+(?:\.\d+(?:[eE][+-]\d+)?)?"
-    PAREN_TOKEN = r"[\[\](){}]"
-    NOT_ANYNAME_TOKEN = r"(?P<any>" + "|".join(map(lambda t: f"(?:{t})", filter(
-        None, [PAREN_TOKEN, STRING_TOKEN, ATOM_TOKEN, NUMBER_TOKEN]))) + ")"
-    ANYNAME_TOKEN = r"(?:(?!(?&any))\S)+"
-    ALL_TOKENS = regex.compile(NOT_ANYNAME_TOKEN + "|" + ANYNAME_TOKEN)
+    ATOM_REGEX = "|".join(
+        fr"(?&start){regex.escape(a)}(?&end)"
+        if a[0].isalpha() and a[-1].isalpha()
+        else regex.escape(a)
+        for a in sorted(atoms, reverse=True)
+    )
+    if ATOM_REGEX:
+        ATOM_REGEX = "| (?:%s)" % ATOM_REGEX
+    ALL_TOKENS = r"""
+    (?(DEFINE)
+        (?P<start>(?<=\s|^))
+        (?P<end>(?=\s|$))
+    )
+    (?P<special>
+          (?:[\[\](){}]) # parens
+        | (?:(?&start)(?P<q>['"])(?:\\\S|(?!(?P=q))[\s\S])*?(?P=q)(?&end))
+        # double or single quoted string
+        %s # an atom (but NOT in a word) -- this will be formatted in below     vv
+        | (?:0x\d+|-?\d+(?:\.\d+(?:[eE][+-]\d+)?)?) # a number
+    ) | (?:(?:(?!(?&special))\S)+) # anything that is not special token""" % ATOM_REGEX
+    ALL_TOKENS = regex.compile(ALL_TOKENS, flags=regex.X)
     i = 0
     while i < len(string):
         match = ALL_TOKENS.search(string, i)
         if not match:
             return
         token = match.group(0)
+        if not token:
+            raise_token_error([Token(i, None, " ", string)], f"empty token (internal error) {atoms=}")
         yield Token(match.start(), process_token(token), token, string)
         i = match.end()
 
 
 if __name__ == '__main__':
-    line, atoms = "It's a tomato! (Sub-expression) {]{]{] pa(\"'\\n\\n\") spooky! (the orange) And errors: {{{", [
+    line, atoms = "sandbox world door", [
         "$", "or", "and", "is in"]
     for t in tokenize(line, atoms):
         print(t.line)
         print(" " * t.start + "^" * len(t.source), repr(t.value))
-    parsed = parse_interpolated(line, atoms)
+    parsed = parse2(line, atoms, "()")
     print("-" * 80)
     print(parsed)
