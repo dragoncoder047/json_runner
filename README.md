@@ -70,8 +70,8 @@ Conceptually, there are 4 major things in JSON: strings, numbers, objects (Pytho
 `silently <line>`
 :   Suppresses printing output while the `<line>` is running. Useful if you are calling some action that produces output, but you don't want that output shown to the user.
 
-`list <expression> [,<expression>...]`
-:   Evaluates the expressions, and concatenates all of the result lists together and returns it. Commas aren't typically necessary, but they're included when needed to prevent "greedy" operators from eating the value on the other side of the comma.
+`list <expression>`
+:   Evaluates the expressions, and concatenates all of the result lists together and returns it.
 
 `setsub <container> <key> <value>` (all 3 are expressions)
 :   Sets the key value of the container to the value and then returns the value.
