@@ -161,7 +161,7 @@ def tokenize(string, atoms):
         fr"(?&start){regex.escape(a)}(?&end)"
         if a[0].isalpha() and a[-1].isalpha()
         else regex.escape(a)
-        for a in sorted(atoms, reverse=True)
+        for a in sorted(atoms, key=len, reverse=True)
     )
     if ATOM_REGEX:
         ATOM_REGEX = "| (?:%s)" % ATOM_REGEX
